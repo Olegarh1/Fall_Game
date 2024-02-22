@@ -16,12 +16,15 @@ class GameScene: SKScene {
     
     private let playerNode = PlayerNode()
     private let wallNode = WallNode()
+    private let floorNode = FloorNode()
     private let leftNode = SideNode()
     private let rightNode = SideNode()
     private let obstangleNode = SKNode()
     
     private var posY: CGFloat = 0.0
-    private var pairNum = 0
+    private var isGameOver = false
+    private var pairNum = 1
+    private var pairCount = 0
     private var firstTap = true
 
     //MARK: - Lifecycle
@@ -48,13 +51,24 @@ class GameScene: SKScene {
     }
 
     override func update(_ currentTime: TimeInterval) {
-//        if firstTap {
-//            worldNode.position.y += 25.0
-//        }
-        //TODO: - Spawn new ontangles
-        if playerNode.position.y < frame.midY {
+        
+        if !firstTap && !isGameOver{
+            worldNode.position.y += 2
+        }
+        
+        if pairCount <= 5 {
             addObstangle()
         }
+        
+        // Видаляємо труби, які вийшли за межі екрану
+//        obstangleNode.children.forEach { node in
+//            if let pairNode = node as? SKNode {
+//                if pairNode.position.y < -frame.height {
+//                    pairNode.removeFromParent()
+//                }
+//            }
+//        }
+
     }
 }
 
@@ -64,6 +78,7 @@ extension GameScene {
     private func setupNodes() {
         backgroundColor = .white
         setupPhysics()
+
         //TODO: - BackgroundNode
         addBackground()
         
@@ -108,7 +123,8 @@ extension GameScene {
         wallNode.position = CGPoint(x: frame.midX, y: frame.maxY)
         leftNode.position = CGPoint(x: playableRect.minX, y: frame.midY)
         rightNode.position = CGPoint(x: playableRect.maxX, y: frame.midY)
-        [wallNode, leftNode, rightNode] .forEach {
+        floorNode.position = CGPoint(x: frame.midX, y: 0.0)
+        [wallNode, leftNode, rightNode, floorNode] .forEach {
             addChild($0)
         }
     }
@@ -121,22 +137,28 @@ extension GameScene {
         let pipePair = SKNode()
         pipePair.position = CGPoint(x: 0.0, y: posY)
         pipePair.zPosition = 1.0
+        pipePair.name = "Pair \(pairNum)"
         
         pairNum += 1
-        pipePair.name = "Pair \(pairNum)"
+        pairCount += 1
         
         let size = CGSize(width: screenWidth, height: 30.0)
         let pipe1 = SKSpriteNode(color: .black, size: size)
-        pipe1.position = CGPoint(x: -130.0, y: 0.0)
+        let posX = Double.random(in: -200...70)
+        pipe1.name = "Left \(pairNum)"
+        pipe1.position = CGPoint(x: posX, y: 0.0)
         pipe1.physicsBody = SKPhysicsBody(rectangleOf: size)
         pipe1.physicsBody?.isDynamic = false
-        pipe1.physicsBody?.categoryBitMask = PhysicsCategory.Obstangles
+        pipe1.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
+        pipe1.physicsBody?.contactTestBitMask = PhysicsCategory.Wall
         
         let pipe2 = SKSpriteNode(color: .black, size: size)
+        pipe2.name = "Right \(pairNum)"
         pipe2.position = CGPoint(x: pipe1.position.x + size.width + 130, y: 0.0)
         pipe2.physicsBody = SKPhysicsBody(rectangleOf: size)
         pipe2.physicsBody?.isDynamic = false
-        pipe2.physicsBody?.categoryBitMask = PhysicsCategory.Obstangles
+        pipe2.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
+        pipe2.physicsBody?.contactTestBitMask = PhysicsCategory.Wall
         
         pipePair.addChild(pipe1)
         pipePair.addChild(pipe2)
@@ -151,14 +173,10 @@ extension GameScene: SKPhysicsContactDelegate {
     
     func didBegin(_ contact: SKPhysicsContact) {
         let body = contact.bodyA.categoryBitMask == PhysicsCategory.Player ? contact.bodyB : contact.bodyA
-        
         switch body.categoryBitMask {
         case PhysicsCategory.Wall:
+            isGameOver = true
             playerNode.over()
-        case PhysicsCategory.Side:
-            playerNode.side()
-        case PhysicsCategory.Obstangles:
-            playerNode.side()
         default: break
         }
     }

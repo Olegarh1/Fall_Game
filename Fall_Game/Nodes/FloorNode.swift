@@ -1,13 +1,14 @@
 //
-//  WallNode.swift
+//  FloorNode.swift
 //  Fall_Game
 //
-//  Created by Oleg Zakladnyi on 21.02.2024.
+//  Created by Oleg Zakladnyi on 22.02.2024.
 //
+
 
 import SpriteKit
 
-class WallNode: SKNode {
+class FloorNode: SKNode {
     
     //MARK: - Properties
     private var node: SKSpriteNode!
@@ -16,9 +17,8 @@ class WallNode: SKNode {
     override init() {
         super.init()
         
-        self.name = "Wall"
+        self.name = "Floor"
         self.zPosition = 5.0
-
         self.setupPhysics()
     }
     
@@ -28,7 +28,7 @@ class WallNode: SKNode {
 }
 
 //MARK: - Setups
-extension WallNode {
+extension FloorNode {
     
     private func setupPhysics() {
         let size = CGSize(width: screenWidth, height: 5.0)
@@ -36,9 +36,9 @@ extension WallNode {
         node.physicsBody = SKPhysicsBody(rectangleOf: size)
         node.physicsBody?.isDynamic = false
         node.physicsBody?.mass = 100.0
-        node.physicsBody?.restitution = 1.0
-        node.physicsBody?.categoryBitMask = PhysicsCategory.Wall
-        node.physicsBody?.collisionBitMask = PhysicsCategory.Player | PhysicsCategory.Pipe
+        node.physicsBody?.restitution = 0.0
+        node.physicsBody?.categoryBitMask = PhysicsCategory.Side
         addChild(node)
     }
 }
+

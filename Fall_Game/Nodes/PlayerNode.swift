@@ -35,7 +35,7 @@ extension PlayerNode {
         player.name = "Player"
         player.zPosition = .pi
         player.fillColor = .red
-        player.physicsBody = SKPhysicsBody(circleOfRadius: radius * 0.8)
+        player.physicsBody = SKPhysicsBody(circleOfRadius: radius)
         player.physicsBody?.isDynamic = false
         player.physicsBody?.linearDamping = 0.0
         player.physicsBody?.allowsRotation = false
@@ -45,8 +45,8 @@ extension PlayerNode {
         player.physicsBody?.friction = 1.0
         player.physicsBody?.mass = 10.0
         player.physicsBody?.categoryBitMask = PhysicsCategory.Player
-        player.physicsBody?.contactTestBitMask = PhysicsCategory.Wall | PhysicsCategory.Side | PhysicsCategory.Obstangles
-        player.physicsBody?.collisionBitMask = PhysicsCategory.Side
+        player.physicsBody?.contactTestBitMask = PhysicsCategory.Wall
+        player.physicsBody?.collisionBitMask = PhysicsCategory.Side | PhysicsCategory.Pipe
         addChild(player)
     }
     
@@ -62,10 +62,6 @@ extension PlayerNode {
     internal func over() {
         player.fillColor = .purple
         activate(false)
-    }
-    
-    internal func side() {
-        player.physicsBody?.applyImpulse(CGVector(dx: 0.0, dy: 50.0))
     }
     
     internal func height() -> CGFloat {
