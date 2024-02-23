@@ -8,8 +8,8 @@
 
 import UIKit
 
-let screenWidth: CGFloat = 414.0
-let screenHeight: CGFloat = 896.0
+let screenWidth = UIScreen.main.bounds.width
+let screenHeight = UIScreen.main.bounds.height
 
 var playableRect: CGRect {
     let ratio: CGFloat = 2.16
@@ -19,11 +19,4 @@ var playableRect: CGRect {
     let y: CGFloat = 0.0
     
     return CGRect(x: x, y: y, width: w, height: h)
-}
-
-struct PhysicsCategory {
-    static let Player:      UInt32 = 0b1
-    static let Wall:        UInt32 = 0b10
-    static let Side:        UInt32 = 0b100
-    static let Pipe:        UInt32 = 0b1000
 }

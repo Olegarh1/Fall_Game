@@ -8,7 +8,26 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+protocol GameSceneDelegate: AnyObject {
+    func gameDidEnd(time: Int)
+}
+
+final class GameScene: SKScene {
+    
+    //MARK: - Delegate
+    weak var gameDelegate: GameSceneDelegate?
+    
+    //MARK: - Private UI elements
+    private let countDownLable = {
+        var label = SKLabelNode(fontNamed: "Chalkduster")
+        label.text = "Time: 0"
+        label.fontColor = .init(red: 30/255, green: 129/255, blue: 61/255, alpha: 1.0)
+        label.fontSize = 24.0
+        label.zPosition = 2.0
+        label.horizontalAlignmentMode = .left
+        
+        return label
+    }()
     
     //MARK: - Properties
     private let worldNode = SKNode()
@@ -22,17 +41,20 @@ class GameScene: SKScene {
     private let obstangleNode = SKNode()
     
     private var posY: CGFloat = 0.0
-    private var isGameOver = false
-    private var pairNum = 1
+    private var pairNum = 0
     private var pairCount = 0
+    private var isGameOver = false
     private var firstTap = true
-
+    
+    private var counter = 0
+    private var counterTimer = Timer()
+    
     //MARK: - Lifecycle
     override func didMove(to view: SKView) {
         
         setupNodes()
     }
-
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
         
@@ -40,6 +62,7 @@ class GameScene: SKScene {
         
         if firstTap {
             playerNode.activate(true)
+            startCounter()
             firstTap = false
         }
         
@@ -49,7 +72,7 @@ class GameScene: SKScene {
         
         playerNode.jump(right)
     }
-
+    
     override func update(_ currentTime: TimeInterval) {
         
         if !firstTap && !isGameOver{
@@ -59,16 +82,18 @@ class GameScene: SKScene {
         if pairCount <= 5 {
             addObstangle()
         }
+    }
+    
+    private func startCounter() {
+        counterTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(decrementTimer), userInfo: nil, repeats: true)
+    }
+    
+    @objc func decrementTimer() {
         
-        // Видаляємо труби, які вийшли за межі екрану
-//        obstangleNode.children.forEach { node in
-//            if let pairNode = node as? SKNode {
-//                if pairNode.position.y < -frame.height {
-//                    pairNode.removeFromParent()
-//                }
-//            }
-//        }
-
+        if !isGameOver {
+            counter += 1
+            countDownLable.text = "Time: \(counter)"
+        }
     }
 }
 
@@ -78,31 +103,27 @@ extension GameScene {
     private func setupNodes() {
         backgroundColor = .white
         setupPhysics()
-
-        //TODO: - BackgroundNode
+        
         addBackground()
-        
-        //TODO: - WorldNode
-        addChild(worldNode)
-        
-        //TODO: - PlayerNode
-        playerNode.position = CGPoint(x: frame.midX, y: frame.midY * 0.6)
-        worldNode.addChild(playerNode)
-        
-        //TODO: - WallNode
         addWall()
         
-        //TODO: - ObstangleNode
+        countDownLable.position = CGPoint(x: frame.midX, y: frame.maxY * 0.9)
+        playerNode.position = CGPoint(x: frame.midX, y: frame.maxY * 0.8)
+        addChild(countDownLable)
+        addChild(worldNode)
+        
+        worldNode.addChild(playerNode)
         worldNode.addChild(obstangleNode)
+        
         posY = frame.midY
     }
     
     //MARK: - Set gravity
     private func setupPhysics() {
-        
         physicsWorld.gravity = CGVector(dx: 0.0, dy: -30.0)
         physicsWorld.contactDelegate = self
     }
+    
 }
 
 //MARK: - BackgroundNode
@@ -167,7 +188,7 @@ extension GameScene {
         posY -= frame.midY * 0.5
     }
 }
- 
+
 //MARK: - SKPhysicsContactDelegate
 extension GameScene: SKPhysicsContactDelegate {
     
@@ -176,6 +197,7 @@ extension GameScene: SKPhysicsContactDelegate {
         switch body.categoryBitMask {
         case PhysicsCategory.Wall:
             isGameOver = true
+            gameDelegate?.gameDidEnd(time: counter)
             playerNode.over()
         default: break
         }
