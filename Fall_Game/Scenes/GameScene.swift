@@ -6,6 +6,7 @@
 //
 
 import SpriteKit
+import CoreMotion
 import GameplayKit
 
 protocol GameSceneDelegate: AnyObject {
@@ -14,12 +15,12 @@ protocol GameSceneDelegate: AnyObject {
 
 final class GameScene: SKScene {
     
-    //MARK: - Delegate
+    //MARK: - Delegates
     weak var gameDelegate: GameSceneDelegate?
     
     //MARK: - Private UI elements
     private let countDownLable = {
-        var label = SKLabelNode(fontNamed: "Chalkduster")
+        let label = SKLabelNode(fontNamed: "Chalkduster")
         label.text = "Time: 0"
         label.fontColor = .init(red: 30/255, green: 129/255, blue: 61/255, alpha: 1.0)
         label.fontSize = 24.0
@@ -28,11 +29,32 @@ final class GameScene: SKScene {
         
         return label
     }()
-    
-    //MARK: - Properties
+    private lazy var startLabel = {
+        let label = SKLabelNode(fontNamed: "Chalkduster")
+        label.text = "Start Game"
+        label.fontSize = 36
+        label.fontColor = .init(red: 30/255, green: 129/255, blue: 61/255, alpha: 1.0)
+        label.zPosition = 10
+        label.position = CGPoint(x: frame.midX, y: frame.midY + 25.0)
+        label.name = "startButton"
+        
+        return label
+    }()
+    private lazy var restartLabel = {
+        let label = SKLabelNode(fontNamed: "Chalkduster")
+        label.text = "Restart Game"
+        label.fontSize = 36
+        label.fontColor = .init(red: 30/255, green: 129/255, blue: 61/255, alpha: 1.0)
+        label.scene?.backgroundColor = .blue
+        label.zPosition = 10
+        label.position = CGPoint(x: frame.midX, y: frame.midY + 25.0)
+        label.name = "restartButton"
+        label.isHidden = true
+        
+        return label
+    }()
     private let worldNode = SKNode()
     private var backgroundNode: SKSpriteNode!
-    
     private let playerNode = PlayerNode()
     private let wallNode = WallNode()
     private let floorNode = FloorNode()
@@ -40,11 +62,14 @@ final class GameScene: SKScene {
     private let rightNode = SideNode()
     private let obstangleNode = SKNode()
     
+    //MARK: - Properties
+    private let motionManager = CMMotionManager()
     private var posY: CGFloat = 0.0
     private var pairNum = 0
-    private var pairCount = 0
-    private var isGameOver = false
-    private var firstTap = true
+    private var score = 0
+    private var pipeSpawnCount = 0
+    private let ballSpeed = 28.0
+    private var isStartGame = false
     
     private var counter = 0
     private var counterTimer = Timer()
@@ -58,29 +83,39 @@ final class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
         
-        guard let touch = touches.first else { return }
-        
-        if firstTap {
-            playerNode.activate(true)
-            startCounter()
-            firstTap = false
+        for touch in touches {
+            let location = touch.location(in: self)
+            let startNode = atPoint(location)
+            
+            if startNode.name == "startButton" {
+                isStartGame = true
+                startLabel.isHidden = true
+                motionManager.startAccelerometerUpdates()
+                playerNode.activate(true)
+                startCounter()
+            }
+            
+            if startNode.name == "restartButton" {
+                restartGame()
+            }
         }
-        
-        //TODO: - Jump
-        let location = touch.location(in: self)
-        let right = !(location.x > frame.width / 2)
-        
-        playerNode.jump(right)
     }
-    
+
     override func update(_ currentTime: TimeInterval) {
         
-        if !firstTap && !isGameOver{
-            worldNode.position.y += 2
-        }
-        
-        if pairCount <= 5 {
-            addObstangle()
+        accelometr()
+        setupWorldSpeed()
+        spawnPipePair()
+        deletePipePair()
+    }
+    
+    //MARK: - Private function
+    private func accelometr() {
+        if isStartGame {
+            if let data = motionManager.accelerometerData {
+                let acceleration = data.acceleration.x
+                self.playerNode.position.x += acceleration * 15.0
+            }
         }
     }
     
@@ -88,9 +123,16 @@ final class GameScene: SKScene {
         counterTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(decrementTimer), userInfo: nil, repeats: true)
     }
     
-    @objc func decrementTimer() {
-        
-        if !isGameOver {
+    private func restartGame() {
+        let newScene = GameScene(size: self.size)
+        newScene.scaleMode = self.scaleMode
+        let animation = SKTransition.fade(withDuration: 1.0)
+        self.view?.presentScene(newScene, transition: animation)
+    }
+    
+    //MARK: - Private objc function
+    @objc private func decrementTimer() {
+        if isStartGame {
             counter += 1
             countDownLable.text = "Time: \(counter)"
         }
@@ -107,23 +149,51 @@ extension GameScene {
         addBackground()
         addWall()
         
-        countDownLable.position = CGPoint(x: frame.midX, y: frame.maxY * 0.9)
+        countDownLable.position = CGPoint(x: frame.maxX - 150.0, y: frame.maxY * 0.9)
         playerNode.position = CGPoint(x: frame.midX, y: frame.maxY * 0.8)
         addChild(countDownLable)
         addChild(worldNode)
+        addChild(startLabel)
+        addChild(restartLabel)
         
         worldNode.addChild(playerNode)
         worldNode.addChild(obstangleNode)
         
         posY = frame.midY
     }
-    
-    //MARK: - Set gravity
+
     private func setupPhysics() {
-        physicsWorld.gravity = CGVector(dx: 0.0, dy: -30.0)
+        physicsWorld.gravity = CGVector(dx: 0.0, dy: -ballSpeed)
         physicsWorld.contactDelegate = self
     }
     
+    private func setupWorldSpeed() {
+        if isStartGame {
+            let speedUp = ballSpeed - 25.0
+            if speedUp > 0 {
+                worldNode.position.y += speedUp
+            } else {
+                worldNode.position.y += 2
+            }
+        }
+    }
+    
+    private func spawnPipePair() {
+        if pipeSpawnCount < 10 {
+            pipeSpawnCount += 1
+            addObstangle()
+        }
+    }
+    
+    private func deletePipePair() {
+        obstangleNode.children.forEach({
+            let i = score - 5
+            if $0.name == "Pair \(i)" && i >= 0 {
+                $0.removeFromParent()
+                addObstangle()
+            }
+        })
+    }
 }
 
 //MARK: - BackgroundNode
@@ -158,31 +228,33 @@ extension GameScene {
         let pipePair = SKNode()
         pipePair.position = CGPoint(x: 0.0, y: posY)
         pipePair.zPosition = 1.0
-        pipePair.name = "Pair \(pairNum)"
         
         pairNum += 1
-        pairCount += 1
+        pipePair.name = "Pair \(pairNum)"
         
         let size = CGSize(width: screenWidth, height: 30.0)
         let pipe1 = SKSpriteNode(color: .black, size: size)
         let posX = Double.random(in: -200...70)
-        pipe1.name = "Left \(pairNum)"
         pipe1.position = CGPoint(x: posX, y: 0.0)
         pipe1.physicsBody = SKPhysicsBody(rectangleOf: size)
         pipe1.physicsBody?.isDynamic = false
         pipe1.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
-        pipe1.physicsBody?.contactTestBitMask = PhysicsCategory.Wall
         
         let pipe2 = SKSpriteNode(color: .black, size: size)
-        pipe2.name = "Right \(pairNum)"
         pipe2.position = CGPoint(x: pipe1.position.x + size.width + 130, y: 0.0)
         pipe2.physicsBody = SKPhysicsBody(rectangleOf: size)
         pipe2.physicsBody?.isDynamic = false
         pipe2.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
-        pipe2.physicsBody?.contactTestBitMask = PhysicsCategory.Wall
+        
+        let score = SKNode()
+        score.position = CGPoint(x: 0.0, y: size.height)
+        score.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 2, height: size.height))
+        score.physicsBody?.isDynamic = false
+        score.physicsBody?.categoryBitMask = PhysicsCategory.Score
         
         pipePair.addChild(pipe1)
         pipePair.addChild(pipe2)
+        pipePair.addChild(score)
         
         obstangleNode.addChild(pipePair)
         posY -= frame.midY * 0.5
@@ -196,9 +268,17 @@ extension GameScene: SKPhysicsContactDelegate {
         let body = contact.bodyA.categoryBitMask == PhysicsCategory.Player ? contact.bodyB : contact.bodyA
         switch body.categoryBitMask {
         case PhysicsCategory.Wall:
-            isGameOver = true
+            isStartGame = false
+            worldNode.position.y = 0
+            motionManager.stopAccelerometerUpdates()
+            restartLabel.isHidden = false
             gameDelegate?.gameDidEnd(time: counter)
             playerNode.over()
+        case PhysicsCategory.Score:
+            if let node = body.node {
+                score += 1
+                node.removeFromParent()
+            }
         default: break
         }
     }

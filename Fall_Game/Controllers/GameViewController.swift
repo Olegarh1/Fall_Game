@@ -12,14 +12,30 @@ import GameplayKit
 
 final class GameViewController: UIViewController {
     
+    //MARK: - Private UI elements
+    private let backView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .white
+        return view
+    }()
+    private lazy var backButton: UIButton = {
+        let button = UIButton(type: .custom)
+        let image = UIImage(systemName: "arrow.left")
+        button.setImage(image, for: .normal)
+        button.setTitle("Back", for: .normal)
+        button.setTitleColor(.gray, for: .normal)
+        button.tintColor = .gray
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16.0)
+        button.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
+        return button
+    }()
+    
     //MARK: - Properties
-    private let startScene = StartScene(fileNamed: "StartScene")
     private var gameScene =  GameScene(size: CGSize(width: screenWidth, height: screenHeight))
     private var webView = WKWebView()
     private var winnerURL: String = ""
     private var loserURL: String = ""
-    private var timer = 0
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -40,9 +56,9 @@ final class GameViewController: UIViewController {
         
         gameScene.scaleMode = .aspectFill
         view.ignoresSiblingOrder = true
-        view.showsFPS = true
-        view.showsNodeCount = true
-        view.showsPhysics = true
+        view.showsFPS = false
+        view.showsNodeCount = false
+        view.showsPhysics = false
         view.presentScene(gameScene)
     }
     
@@ -68,7 +84,7 @@ final class GameViewController: UIViewController {
     }
     
     private func winnerWebView() {
-        webView = WKWebView(frame: self.view.frame)
+        webView = WKWebView(frame: CGRect(x: 0.0, y: 50.0, width: screenWidth, height: screenHeight - 50.0))
         view.addSubview(webView)
         
         guard let myRequest = createURLRequest(from: winnerURL) else {
@@ -79,7 +95,7 @@ final class GameViewController: UIViewController {
     }
     
     private func loserWebView() {
-        webView = WKWebView(frame: self.view.frame)
+        webView = WKWebView(frame: CGRect(x: 0.0, y: 50.0, width: screenWidth, height: screenHeight - 50.0))
         view.addSubview(webView)
         
         guard let myRequest = createURLRequest(from: loserURL) else {
@@ -88,12 +104,26 @@ final class GameViewController: UIViewController {
         }
         webView.load(myRequest)
     }
+    
+    private func addBackButton() {
+        backButton.frame = CGRect(x: 0.0, y: 0.0, width: 100.0, height: 50.0)
+        backView.frame = CGRect(x: 0.0, y: 0.0, width: screenWidth, height: 50.0)
+        backView.addSubview(backButton)
+        view.addSubview(backView)
+    }
+    
+    @objc private func backButtonTapped() {
+        backView.removeFromSuperview()
+        webView.removeFromSuperview()
+    }
+
 }
 
 //MARK: - GameSceneDelegate
 extension GameViewController: GameSceneDelegate {
     
     func gameDidEnd(time: Int) {
+        addBackButton()
         if time >= 30 {
             winnerWebView()
         } else {

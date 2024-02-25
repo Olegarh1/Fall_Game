@@ -38,7 +38,6 @@ extension SideNode {
         node.physicsBody?.friction = 1.0
         node.physicsBody?.restitution = 0.0
         node.physicsBody?.categoryBitMask = PhysicsCategory.Side
-        node.physicsBody?.collisionBitMask = 0
         addChild(node)
     }
 }

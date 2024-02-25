@@ -45,18 +45,13 @@ extension PlayerNode {
         player.physicsBody?.friction = 1.0
         player.physicsBody?.mass = 10.0
         player.physicsBody?.categoryBitMask = PhysicsCategory.Player
-        player.physicsBody?.contactTestBitMask = PhysicsCategory.Wall
+        player.physicsBody?.contactTestBitMask = PhysicsCategory.Wall | PhysicsCategory.Score
         player.physicsBody?.collisionBitMask = PhysicsCategory.Side | PhysicsCategory.Pipe
         addChild(player)
     }
     
     internal func activate(_ isDynamic: Bool)  {
         player.physicsBody?.isDynamic = isDynamic
-    }
-    
-    internal func jump(_ right: Bool) {
-        let velocity = CGVector(dx: right ? -200 : 200, dy: 1000.0)
-        player.physicsBody?.velocity = velocity
     }
     
     internal func over() {
