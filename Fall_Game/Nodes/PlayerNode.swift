@@ -51,6 +51,7 @@ extension PlayerNode {
     }
     
     internal func activate(_ isDynamic: Bool)  {
+        player.fillColor = .red
         player.physicsBody?.isDynamic = isDynamic
     }
     

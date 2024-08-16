@@ -55,7 +55,7 @@ final class GameScene: SKScene {
     }()
     private let worldNode = SKNode()
     private var backgroundNode: SKSpriteNode!
-    private let playerNode = PlayerNode()
+    private var playerNode = PlayerNode()
     private let wallNode = WallNode()
     private let floorNode = FloorNode()
     private let leftNode = SideNode()
@@ -87,6 +87,7 @@ final class GameScene: SKScene {
             let location = touch.location(in: self)
             let startNode = atPoint(location)
             
+            //TODO: - Name
             if startNode.name == "startButton" {
                 isStartGame = true
                 startLabel.isHidden = true
@@ -123,11 +124,27 @@ final class GameScene: SKScene {
         counterTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(decrementTimer), userInfo: nil, repeats: true)
     }
     
+    //TODO: - Restart
     private func restartGame() {
-        let newScene = GameScene(size: self.size)
-        newScene.scaleMode = self.scaleMode
-        let animation = SKTransition.fade(withDuration: 1.0)
-        self.view?.presentScene(newScene, transition: animation)
+        playerNode.removeFromParent()
+        obstangleNode.removeAllChildren()
+        
+        playerNode = PlayerNode()
+        playerNode.position = CGPoint(x: frame.midX, y: frame.maxY * 0.8)
+        worldNode.addChild(playerNode)
+        
+        posY = frame.midY
+        pipeSpawnCount = 0
+        score = 0
+        pairNum = 0
+        counter = 0
+        countDownLable.text = "Time: 0"
+        worldNode.position.y = 0
+        restartLabel.isHidden = true
+        isStartGame = true
+        
+        playerNode.activate(true)
+        startCounter()
     }
     
     //MARK: - Private objc function
@@ -150,11 +167,11 @@ extension GameScene {
         addWall()
         
         countDownLable.position = CGPoint(x: frame.maxX - 150.0, y: frame.maxY * 0.9)
+        print("Start X \(frame.midX) Y \(frame.maxY * 0.8)")
         playerNode.position = CGPoint(x: frame.midX, y: frame.maxY * 0.8)
-        addChild(countDownLable)
-        addChild(worldNode)
-        addChild(startLabel)
-        addChild(restartLabel)
+        [countDownLable, worldNode, startLabel, restartLabel].forEach {
+            addChild($0)
+        }
         
         worldNode.addChild(playerNode)
         worldNode.addChild(obstangleNode)
@@ -272,6 +289,7 @@ extension GameScene: SKPhysicsContactDelegate {
             worldNode.position.y = 0
             motionManager.stopAccelerometerUpdates()
             restartLabel.isHidden = false
+            counterTimer.invalidate()
             gameDelegate?.gameDidEnd(time: counter)
             playerNode.over()
         case PhysicsCategory.Score:
