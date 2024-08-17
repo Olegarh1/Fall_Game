@@ -36,6 +36,7 @@ final class GameViewController: UIViewController {
     private var winnerURL: String = ""
     private var loserURL: String = ""
 
+    //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -63,11 +64,11 @@ final class GameViewController: UIViewController {
     }
     
     private func loadURL() {
-        APIManager.shared.fetchData { result in
+        APIManager.shared.fetchData { [self] result in
             switch result {
             case .success(let gameOver):
-                self.winnerURL = gameOver.winner
-                self.loserURL = gameOver.loser
+                winnerURL = gameOver.winner
+                loserURL = gameOver.loser
             case .failure(let error):
                 print("Error: \(error.localizedDescription)")
             }
@@ -75,22 +76,26 @@ final class GameViewController: UIViewController {
     }
     
     private func createURLRequest(from urlString: String) -> URLRequest? {
-        guard let url = URL(string: urlString) else {
-            print("Invalid URL")
+
+        guard let url = URL(string: urlString), UIApplication.shared.canOpenURL(url) else {
+            showErrorMessage("Invalid URL: \(urlString)")
             return nil
         }
         
         return URLRequest(url: url)
     }
+
     
     private func winnerWebView() {
         webView = WKWebView(frame: CGRect(x: 0.0, y: 50.0, width: screenWidth, height: screenHeight - 50.0))
         view.addSubview(webView)
         
         guard let myRequest = createURLRequest(from: winnerURL) else {
-            print("Failed to create URLRequest")
+            showErrorMessage("Failed to create URLRequest")
             return
         }
+        
+        webView.navigationDelegate = self
         webView.load(myRequest)
     }
     
@@ -99,12 +104,25 @@ final class GameViewController: UIViewController {
         view.addSubview(webView)
         
         guard let myRequest = createURLRequest(from: loserURL) else {
-            print("Failed to create URLRequest")
+            showErrorMessage("Failed to create URLRequest")
             return
         }
+        
+        webView.navigationDelegate = self
         webView.load(myRequest)
     }
     
+    private func showErrorMessage(_ message: String) {
+        DispatchQueue.main.async {
+            let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+            
+            let okAction = UIAlertAction(title: "OK", style: .default)
+            alertController.addAction(okAction)
+
+            self.present(alertController, animated: true, completion: nil)
+        }
+    }
+
     private func addBackButton() {
         backButton.frame = CGRect(x: 0.0, y: 0.0, width: 100.0, height: 50.0)
         backView.frame = CGRect(x: 0.0, y: 0.0, width: screenWidth, height: 50.0)
@@ -112,6 +130,7 @@ final class GameViewController: UIViewController {
         view.addSubview(backView)
     }
     
+    //MARK: - Private objc function
     @objc private func backButtonTapped() {
         backView.removeFromSuperview()
         webView.removeFromSuperview()
@@ -128,6 +147,22 @@ extension GameViewController: GameSceneDelegate {
             winnerWebView()
         } else {
             loserWebView()
+        }
+    }
+}
+
+//MARK: - WKNavigationDelegate
+extension GameViewController: WKNavigationDelegate {
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        showErrorMessage("Failed to load webpage: \(error.localizedDescription)")
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        if (error as NSError).code == NSURLErrorNotConnectedToInternet {
+            showErrorMessage("No internet connection")
+        } else {
+            showErrorMessage("Failed to load webpage: \(error.localizedDescription)")
         }
     }
 }

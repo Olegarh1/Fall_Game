@@ -87,7 +87,6 @@ final class GameScene: SKScene {
             let location = touch.location(in: self)
             let startNode = atPoint(location)
             
-            //TODO: - Name
             if startNode.name == "startButton" {
                 isStartGame = true
                 startLabel.isHidden = true
@@ -143,6 +142,7 @@ final class GameScene: SKScene {
         restartLabel.isHidden = true
         isStartGame = true
         
+        motionManager.startAccelerometerUpdates()
         playerNode.activate(true)
         startCounter()
     }
@@ -167,7 +167,6 @@ extension GameScene {
         addWall()
         
         countDownLable.position = CGPoint(x: frame.maxX - 150.0, y: frame.maxY * 0.9)
-        print("Start X \(frame.midX) Y \(frame.maxY * 0.8)")
         playerNode.position = CGPoint(x: frame.midX, y: frame.maxY * 0.8)
         [countDownLable, worldNode, startLabel, restartLabel].forEach {
             addChild($0)
