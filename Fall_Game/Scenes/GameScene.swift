@@ -123,7 +123,6 @@ final class GameScene: SKScene {
         counterTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(decrementTimer), userInfo: nil, repeats: true)
     }
     
-    //TODO: - Restart
     private func restartGame() {
         playerNode.removeFromParent()
         obstangleNode.removeAllChildren()
@@ -216,7 +215,7 @@ extension GameScene {
 extension GameScene {
     
     private func addBackground() {
-        backgroundNode = SKSpriteNode(imageNamed: "background")
+        backgroundNode = SKSpriteNode(color: .cyan, size: self.size)
         backgroundNode.zPosition = -1.0
         backgroundNode.position = CGPoint(x: frame.midX, y: frame.midY)
         addChild(backgroundNode)
@@ -240,6 +239,7 @@ extension GameScene {
 //MARK: - ObstangleNode
 extension GameScene {
     
+    //TODO: - Random spawn
     private func addObstangle() {
         let pipePair = SKNode()
         pipePair.position = CGPoint(x: 0.0, y: posY)
@@ -248,33 +248,41 @@ extension GameScene {
         pairNum += 1
         pipePair.name = "Pair \(pairNum)"
         
-        let size = CGSize(width: screenWidth, height: 30.0)
-        let pipe1 = SKSpriteNode(color: .black, size: size)
-        let posX = Double.random(in: -200...70)
-        pipe1.position = CGPoint(x: posX, y: 0.0)
-        pipe1.physicsBody = SKPhysicsBody(rectangleOf: size)
-        pipe1.physicsBody?.isDynamic = false
-        pipe1.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
+        let pipeHeight: CGFloat = self.size.height * 0.03
+        let space = playerNode.width() * CGFloat.random(in: 1...2)
+        let randomSpaceX = CGFloat.random(in: 0...(frame.width - space))
+        let leftPipeWidth = randomSpaceX
+        let rightPipeWidth = frame.width - randomSpaceX - space
         
-        let pipe2 = SKSpriteNode(color: .black, size: size)
-        pipe2.position = CGPoint(x: pipe1.position.x + size.width + 130, y: 0.0)
-        pipe2.physicsBody = SKPhysicsBody(rectangleOf: size)
-        pipe2.physicsBody?.isDynamic = false
-        pipe2.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
-        
+        let leftPipeSize = CGSize(width: leftPipeWidth, height: pipeHeight)
+        let leftPipe = SKSpriteNode(color: .black, size: leftPipeSize)
+        leftPipe.position = CGPoint(x: leftPipeWidth / 2, y: 0.0)
+        leftPipe.physicsBody = SKPhysicsBody(rectangleOf: leftPipeSize)
+        leftPipe.physicsBody?.isDynamic = false
+        leftPipe.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
+
+        let rightPipeSize = CGSize(width: rightPipeWidth, height: pipeHeight)
+        let rightPipe = SKSpriteNode(color: .black, size: rightPipeSize)
+        rightPipe.position = CGPoint(x: randomSpaceX + space + rightPipeWidth / 2, y: 0.0)
+        rightPipe.physicsBody = SKPhysicsBody(rectangleOf: rightPipeSize)
+        rightPipe.physicsBody?.isDynamic = false
+        rightPipe.physicsBody?.categoryBitMask = PhysicsCategory.Pipe
+
         let score = SKNode()
-        score.position = CGPoint(x: 0.0, y: size.height)
-        score.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 2, height: size.height))
+        score.position = CGPoint(x: randomSpaceX + space / 2, y: 0.0)
+        score.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: space, height: pipeHeight))
         score.physicsBody?.isDynamic = false
         score.physicsBody?.categoryBitMask = PhysicsCategory.Score
-        
-        pipePair.addChild(pipe1)
-        pipePair.addChild(pipe2)
+
+        pipePair.addChild(leftPipe)
+        pipePair.addChild(rightPipe)
         pipePair.addChild(score)
         
         obstangleNode.addChild(pipePair)
+        
         posY -= frame.midY * 0.5
     }
+
 }
 
 //MARK: - SKPhysicsContactDelegate

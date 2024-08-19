@@ -29,6 +29,7 @@ final class GameViewController: UIViewController {
         button.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
         return button
     }()
+    private var activityIndicator: UIActivityIndicatorView!
     
     //MARK: - Properties
     private var gameScene =  GameScene(size: CGSize(width: screenWidth, height: screenHeight))
@@ -43,6 +44,7 @@ final class GameViewController: UIViewController {
         gameScene.gameDelegate = self
         loadURL()
         loadGameScene()
+        addActivityIndicator()
     }
     
     override var prefersStatusBarHidden: Bool {
@@ -57,9 +59,9 @@ final class GameViewController: UIViewController {
         
         gameScene.scaleMode = .aspectFill
         view.ignoresSiblingOrder = true
-        view.showsFPS = true
-        view.showsNodeCount = true
-        view.showsPhysics = true
+        view.showsFPS = false
+        view.showsNodeCount = false
+        view.showsPhysics = false
         view.presentScene(gameScene)
     }
     
@@ -130,6 +132,13 @@ final class GameViewController: UIViewController {
         view.addSubview(backView)
     }
     
+    private func addActivityIndicator() {
+        activityIndicator = UIActivityIndicatorView(style: .large)
+        activityIndicator.center = view.center
+        activityIndicator.hidesWhenStopped = true
+        view.addSubview(activityIndicator)
+    }
+    
     //MARK: - Private objc function
     @objc private func backButtonTapped() {
         backView.removeFromSuperview()
@@ -153,12 +162,23 @@ extension GameViewController: GameSceneDelegate {
 
 //MARK: - WKNavigationDelegate
 extension GameViewController: WKNavigationDelegate {
-
+    
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        view.bringSubviewToFront(activityIndicator)
+        activityIndicator.startAnimating()
+    }
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        activityIndicator.stopAnimating()
+    }
+    
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        activityIndicator.stopAnimating()
         showErrorMessage("Failed to load webpage: \(error.localizedDescription)")
     }
-
+    
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        activityIndicator.stopAnimating()
         if (error as NSError).code == NSURLErrorNotConnectedToInternet {
             showErrorMessage("No internet connection")
         } else {

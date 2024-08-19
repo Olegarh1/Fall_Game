@@ -11,7 +11,7 @@ class PlayerNode: SKNode {
     
     //MARK: - Properties
     private var player: SKShapeNode!
-    private let radius: CGFloat = 20.0
+    private let radius: CGFloat = UIScreen.main.bounds.width * 0.05
     
     //MARK: - Initializes
     override init() {
@@ -62,5 +62,9 @@ extension PlayerNode {
     
     internal func height() -> CGFloat {
         return player.position.x + screenWidth / 2 * 0.75
+    }
+    
+    internal func width() -> CGFloat {
+        return radius * 2.0
     }
 }
