@@ -229,7 +229,7 @@ extension GameScene {
         wallNode.position = CGPoint(x: frame.midX, y: frame.maxY)
         leftNode.position = CGPoint(x: playableRect.minX, y: frame.midY)
         rightNode.position = CGPoint(x: playableRect.maxX, y: frame.midY)
-        floorNode.position = CGPoint(x: frame.midX, y: 0.0)
+        floorNode.position = CGPoint(x: frame.midX, y: frame.minY)
         [wallNode, leftNode, rightNode, floorNode] .forEach {
             addChild($0)
         }
